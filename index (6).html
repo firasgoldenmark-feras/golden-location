@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#C9A84C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Golden-Location">
+<title>Golden-Location</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --gold:#C9A84C;--gl:#E8C96A;--gd:#8B6914;
+  --bg:#080808;--bg2:#111;--bg3:#181818;--bg4:#222;
+  --text:#F0E6C8;--t2:#A89060;--t3:#555;
+  --bdr:rgba(201,168,76,.18);--bdr2:rgba(201,168,76,.08);
+  --red:#E05252;--org:#E0A052;--grn:#52C07A;
+  --r:14px;--rs:10px;--rx:7px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:'Tajawal',sans-serif;color:var(--text)}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--gd);border-radius:2px}
+
+/* LOGIN */
+#lgS{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.lg-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lg-bg::before{content:'';position:absolute;top:-30%;left:-20%;width:140%;height:140%;background:radial-gradient(ellipse 55% 45% at 50% 30%,rgba(201,168,76,.07) 0%,transparent 70%)}
+.lg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.035) 1px,transparent 1px);background-size:44px 44px}
+.lg-card{position:relative;z-index:1;width:100%;max-width:340px;background:linear-gradient(160deg,#141414,#0c0c0c);border:1px solid var(--bdr);border-radius:22px;padding:32px 26px;box-shadow:0 0 80px rgba(201,168,76,.06),0 32px 80px rgba(0,0,0,.7)}
+.lg-logo{text-align:center;margin-bottom:24px}
+.lg-emb{width:76px;height:76px;margin:0 auto 12px;background:radial-gradient(circle at 30% 30%,#1e1a06,#0a0900);border:1.5px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 36px rgba(201,168,76,.25)}
+.lg-nm{font-size:18px;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,var(--gl),var(--gold),var(--gd));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:2px}
+.lg-sb{font-size:11px;color:var(--t3)}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:12px;color:var(--t2);margin-bottom:6px;font-weight:600}
+.fld input{width:100%;padding:12px 14px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rs);color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:.2s}
+.fld input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.08)}
+.rem{display:flex;align-items:center;gap:8px;margin-bottom:18px;cursor:pointer}
+.rem input{width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
+.rem span{font-size:12px;color:var(--t2)}
+.lg-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--gl),var(--gold));border:none;border-radius:var(--rs);color:#080800;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 18px rgba(201,168,76,.28);transition:.2s}
+.lg-btn:active{transform:scale(.98)}
+.lg-err{text-align:center;font-size:12px;color:var(--red);margin-top:10px;min-height:18px}
+
+/* APP SHELL */
+#app{display:none;flex-direction:column;height:100vh;height:100dvh}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--bdr);height:52px;padding:0 14px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;z-index:200}
+.tb-l{display:flex;align-items:center;gap:9px}
+.tb-pin{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#1e1a06,#0a0900);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 10px rgba(201,168,76,.2)}
+.tb-tl{font-size:14px;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,var(--gl),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.ib{width:32px;height:32px;border-radius:50%;background:var(--bg3);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:var(--t2);transition:.15s}
+.ib:active{background:var(--bg4)}
+.bnav{background:var(--bg2);border-top:1px solid var(--bdr);display:flex;flex-shrink:0}
+.bn{flex:1;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent;color:var(--t3);font-family:inherit;font-size:9px;transition:.2s;position:relative}
+.bn.active{color:var(--gold)}
+.bn.active::before{content:'';position:absolute;top:0;left:15%;right:15%;height:2px;background:var(--gold);border-radius:0 0 3px 3px}
+.bn-i{font-size:20px;line-height:1}
+.content{flex:1;overflow-y:auto;overflow-x:hidden}
+.pg{display:none;padding:14px;animation:fadeUp .25s ease}
+.pg.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.card-hd{font-size:14px;font-weight:700;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* REP CARDS */
+.rep-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.rep-ttl{font-size:16px;font-weight:800;color:var(--text)}
+.btn-add{display:flex;align-items:center;gap:6px;padding:9px 14px;background:linear-gradient(135deg,var(--gl),var(--gold));border:none;border-radius:var(--rs);color:#080800;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(201,168,76,.22);transition:.2s}
+.btn-add:active{transform:scale(.97)}
+.rc{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:16px;margin-bottom:12px;cursor:pointer;transition:.2s}
+.rc:active{border-color:var(--gold)}
+.rc-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.rc-av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--gd),var(--gold));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#080800;flex-shrink:0}
+.rc-info{flex:1;min-width:0}
+.rc-nm{font-size:15px;font-weight:700;color:var(--text);margin-bottom:3px}
+.rc-meta{font-size:12px;color:var(--t2)}
+.rc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.rc-stat{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--rx);padding:8px;text-align:center}
+.rc-sn{font-size:18px;font-weight:800;color:var(--gold)}
+.rc-sl{font-size:10px;color:var(--t3);margin-top:1px}
+.rc-ftr{display:flex;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr2)}
+.rc-badge{display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:20px;font-size:11px}
+.rb-ok{background:rgba(82,192,122,.1);border:1px solid rgba(82,192,122,.25);color:var(--grn)}
+.rb-no{background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.25);color:var(--red)}
+.empty{text-align:center;padding:40px 16px;color:var(--t3)}
+.empty-i{font-size:44px;opacity:.35;margin-bottom:10px}
+.empty-t{font-size:14px;color:var(--t2);margin-bottom:5px}
+
+/* PROCESS PAGE */
+.rep-sel{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px;margin-bottom:14px}
+.rep-sel::-webkit-scrollbar{display:none}
+.rc-chip{flex-shrink:0;padding:9px 16px;border-radius:30px;border:1px solid var(--bdr);background:var(--bg3);color:var(--t2);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;white-space:nowrap}
+.rc-chip.active{background:var(--gold);border-color:var(--gold);color:#080800}
+.days-ctrl{display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rs);padding:14px;margin-bottom:14px}
+.days-ctrl label{font-size:13px;color:var(--t2);flex:1}
+.days-in{width:65px;padding:8px;background:var(--bg4);border:1px solid var(--bdr);border-radius:var(--rx);color:var(--text);font-family:inherit;font-size:16px;font-weight:700;text-align:center;outline:none}
+.days-in:focus{border-color:var(--gold)}
+
+/* PROGRESS */
+.prog{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;margin-bottom:14px;display:none}
+.prog.on{display:block}
+.prog-m{font-size:13px;color:var(--t2);margin-bottom:10px;text-align:center}
+.prog-t{background:var(--bg4);border-radius:20px;height:5px;overflow:hidden}
+.prog-b{height:100%;background:linear-gradient(90deg,var(--gd),var(--gl));border-radius:20px;transition:width .35s;width:0}
+
+/* RESULTS */
+.sum-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sum-b{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--rs);padding:12px;text-align:center}
+.sum-n{font-size:22px;font-weight:800;color:var(--gold)}
+.sum-l{font-size:10px;color:var(--t3);margin-top:2px}
+.day-c{background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--rs);overflow:hidden;margin-bottom:8px}
+.day-h{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;transition:.2s}
+.day-c.open .day-h{border-bottom:1px solid var(--bdr2)}
+.day-bdg{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#080800;background:linear-gradient(135deg,var(--gd),var(--gold))}
+.day-inf{flex:1;min-width:0}
+.day-nm{font-size:13px;font-weight:700;color:var(--text)}
+.day-mt{font-size:11px;color:var(--t3);margin-top:2px}
+.day-st{font-size:16px;flex-shrink:0}
+.chv{color:var(--t3);transition:.2s;flex-shrink:0}
+.day-c.open .chv{transform:rotate(180deg)}
+.day-bd{display:none;padding:10px 14px;max-height:250px;overflow-y:auto}
+.day-c.open .day-bd{display:block}
+.ri{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--bdr2)}
+.ri:last-child{border-bottom:none}
+.ri-n{width:22px;height:22px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--gd),var(--gold));color:#080800;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.ri-nm{flex:1;font-size:11px;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ri-d{font-size:10px;flex-shrink:0;padding:2px 6px;border-radius:10px}
+.d-ok{background:rgba(82,192,122,.1);color:var(--grn)}
+.d-wn{background:rgba(224,160,82,.1);color:var(--org)}
+.d-er{background:rgba(224,82,82,.1);color:var(--red)}
+
+/* ALERTS */
+.alert{padding:10px 13px;border-radius:var(--rs);margin-bottom:10px;font-size:12px;display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.a-ok{background:rgba(82,192,122,.08);border:1px solid rgba(82,192,122,.25);color:var(--grn)}
+.a-wn{background:rgba(224,160,82,.08);border:1px solid rgba(224,160,82,.25);color:var(--org)}
+.a-er{background:rgba(224,82,82,.08);border:1px solid rgba(224,82,82,.25);color:var(--red)}
+
+/* MAP */
+.map-tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:8px;padding-bottom:2px}
+.map-tabs::-webkit-scrollbar{display:none}
+.mt{flex-shrink:0;padding:6px 12px;border-radius:20px;cursor:pointer;font-size:11px;font-weight:600;border:1px solid var(--bdr);background:var(--bg3);color:var(--t2);transition:.2s;white-space:nowrap}
+.mt.active{background:var(--gold);border-color:var(--gold);color:#080800}
+.map-wrap{border-radius:var(--r);overflow:hidden;border:1px solid var(--bdr);height:250px;margin-bottom:14px}
+#mapEl{height:250px}
+
+/* BTNS */
+.btn-p{padding:12px 18px;background:linear-gradient(135deg,var(--gl),var(--gold));border:none;border-radius:var(--rs);color:#080800;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px rgba(201,168,76,.22);transition:.2s}
+.btn-p:active{transform:scale(.97)}
+.btn-p:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-s{padding:12px 18px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rs);color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
+.btn-s:active{transform:scale(.97)}
+.bfw{width:100%;text-align:center}
+.exp-row{display:flex;align-items:center;gap:13px;padding:14px;background:var(--bg3);border:1px solid var(--bdr2);border-radius:var(--rs);margin-bottom:8px;cursor:pointer;transition:.2s}
+.exp-row:active{border-color:var(--gold)}
+.exp-ico{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--gd),var(--gold));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.exp-txt h4{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.exp-txt p{font-size:11px;color:var(--t3)}
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl th{background:var(--bg3);color:var(--gold);padding:8px 10px;text-align:right;font-weight:600;border-bottom:1px solid var(--bdr);position:sticky;top:0}
+.tbl td{padding:7px 10px;border-bottom:1px solid var(--bdr2);vertical-align:middle}
+.bdg{display:inline-flex;align-items:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600}
+.bg{background:rgba(201,168,76,.12);color:var(--gold)}
+.bg-g{background:rgba(82,192,122,.12);color:var(--grn)}
+.bg-r{background:rgba(224,82,82,.12);color:var(--red)}
+.bg-o{background:rgba(224,160,82,.12);color:var(--org)}
+.excl-i{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--rx);margin-bottom:6px}
+.excl-nm{flex:1;font-size:12px;color:var(--text)}
+.excl-r{font-size:10px;color:var(--t3);background:var(--bg4);padding:2px 7px;border-radius:20px}
+
+/* MODAL */
+.ov{position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.88);display:none;align-items:flex-end;justify-content:center}
+.ov.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--bdr);border-radius:22px 22px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:22px 18px;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.m-hd{width:40px;height:4px;border-radius:2px;background:var(--bg4);margin:0 auto 14px}
+.m-title{font-size:16px;font-weight:800;color:var(--gold);margin-bottom:14px}
+.m-upload{border:2px dashed var(--bdr);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;position:relative;transition:.2s;margin-bottom:14px}
+.m-upload.done{border-color:var(--grn);background:rgba(82,192,122,.04)}
+.m-upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.mu-i{font-size:24px;margin-bottom:6px}
+.mu-t{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.mu-s{font-size:11px;color:var(--t3)}
+.mu-r{font-size:12px;color:var(--grn);margin-top:6px}
+.m-acts{display:flex;gap:8px;margin-top:6px}
+.m-acts .btn-p,.m-acts .btn-s{flex:1;text-align:center}
+
+/* TOAST & INSTALL */
+#toast{position:fixed;top:62px;left:50%;transform:translateX(-50%) translateY(-14px);background:var(--bg2);border:1px solid var(--bdr);border-radius:30px;padding:8px 18px;font-size:12px;color:var(--text);opacity:0;transition:.3s;pointer-events:none;z-index:9997;white-space:nowrap;box-shadow:0 8px 28px rgba(0,0,0,.5)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#instBnr{position:fixed;bottom:0;left:0;right:0;z-index:9998;background:linear-gradient(135deg,#1a1400,#0a0a0a);border-top:1px solid var(--gold);padding:12px 14px;display:none;align-items:center;gap:10px}
+#instBnr.show{display:flex}
+.ib-t{flex:1;font-size:12px;color:var(--t2)}
+.ib-t strong{display:block;color:var(--gold);font-size:13px;margin-bottom:1px}
+.bn-inst{padding:9px 16px;background:linear-gradient(135deg,var(--gl),var(--gold));border:none;border-radius:var(--rs);color:#080800;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0}
+.bn-ix{width:26px;height:26px;border-radius:50%;background:var(--bg3);border:1px solid var(--bdr);color:var(--t3);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.leaflet-tile{filter:brightness(.55) contrast(1.1) hue-rotate(200deg)}
+.leaflet-popup-content-wrapper{background:var(--bg2);color:var(--text);border:1px solid var(--bdr);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.6);font-family:'Tajawal',sans-serif}
+.leaflet-popup-tip{background:var(--bg2)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="lgS">
+  <div class="lg-bg"><div class="lg-grid"></div></div>
+  <div class="lg-card">
+    <div class="lg-logo">
+      <div class="lg-emb">📍</div>
+      <div class="lg-nm">GOLDEN-LOCATION</div>
+      <div class="lg-sb">الأثر الذهبي للاستيراد والتصدير</div>
+    </div>
+    <div class="fld"><label>اسم المستخدم</label><input type="text" id="lgU" placeholder="أدخل اسم المستخدم" autocomplete="username"></div>
+    <div class="fld"><label>كلمة المرور</label><input type="password" id="lgP" placeholder="••••••••" autocomplete="current-password"></div>
+    <label class="rem"><input type="checkbox" id="lgR" checked><span>تذكرني على هذا الجهاز</span></label>
+    <button class="lg-btn" onclick="doLogin()">دخول →</button>
+    <div class="lg-err" id="lgE"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="tb-l">
+      <div class="tb-pin">📍</div>
+      <div class="tb-tl">GOLDEN-LOCATION</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <div class="ib" onclick="toast('النظام جاهز ✓')">⚡</div>
+      <div class="ib" onclick="doLogout()">🚪</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- PAGE 1: المناديب -->
+    <div class="pg active" id="pg1">
+      <div class="rep-hdr">
+        <div class="rep-ttl">👥 المناديب</div>
+        <button class="btn-add" onclick="openAddRep()">+ إضافة مندوب</button>
+      </div>
+      <div id="repsList"></div>
+    </div>
+
+    <!-- PAGE 2: المعالجة -->
+    <div class="pg" id="pg2">
+      <div class="card">
+        <div class="card-hd">👤 اختر المندوب</div>
+        <div class="rep-sel" id="repSel"></div>
+      </div>
+      <div id="procPanel">
+        <div class="empty"><div class="empty-i">👤</div><div class="empty-t">اختر مندوباً للبدء</div></div>
+      </div>
+    </div>
+
+    <!-- PAGE 3: النتائج -->
+    <div class="pg" id="pg3">
+      <div id="resultsPanel">
+        <div class="empty"><div class="empty-i">⚙️</div><div class="empty-t">شغّل المعالجة أولاً</div></div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: الخريطة -->
+    <div class="pg" id="pg4">
+      <div id="mapPanel">
+        <div class="empty"><div class="empty-i">🗺️</div><div class="empty-t">شغّل المعالجة أولاً</div></div>
+      </div>
+    </div>
+
+    <!-- PAGE 5: التصدير -->
+    <div class="pg" id="pg5">
+      <div id="exportPanel">
+        <div class="empty"><div class="empty-i">📤</div><div class="empty-t">شغّل المعالجة أولاً</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bnav">
+    <button class="bn active" id="bn1" onclick="goPg(1)"><div class="bn-i">👥</div><div>المناديب</div></button>
+    <button class="bn" id="bn2" onclick="goPg(2)"><div class="bn-i">⚙️</div><div>المعالجة</div></button>
+    <button class="bn" id="bn3" onclick="goPg(3)"><div class="bn-i">📋</div><div>النتائج</div></button>
+    <button class="bn" id="bn4" onclick="goPg(4)"><div class="bn-i">🗺️</div><div>الخريطة</div></button>
+    <button class="bn" id="bn5" onclick="goPg(5)"><div class="bn-i">📤</div><div>التصدير</div></button>
+  </div>
+</div>
+
+<!-- MODAL: إضافة مندوب -->
+<div class="ov" id="addRepMod">
+  <div class="modal">
+    <div class="m-hd"></div>
+    <div class="m-title">👤 إضافة مندوب جديد</div>
+    <div class="fld"><label>اسم المندوب</label><input type="text" id="repNm" placeholder="مثال: أحمد الخالدي"></div>
+    <div class="fld"><label>📋 ملف العملاء (Excel)</label>
+      <div class="m-upload" id="mu1" onclick="document.getElementById('mf1').click()">
+        <input type="file" id="mf1" accept=".xlsx,.xls" onchange="handleRepFile(this)">
+        <div class="mu-i">📊</div>
+        <div class="mu-t">رفع ملف العملاء</div>
+        <div class="mu-s">اسم العميل · رقم النظام · Latitude · Longitude</div>
+        <div class="mu-r" id="mu1R" style="display:none"></div>
+      </div>
+    </div>
+    <div class="m-acts">
+      <button class="btn-s" onclick="closeModal('addRepMod')">إلغاء</button>
+      <button class="btn-p" onclick="saveRep()">حفظ المندوب ✓</button>
+    </div>
+  </div>
+</div>
+
+<div id="instBnr">
+  <div class="ib-t"><strong>تثبيت Golden-Location</strong>أضفه للشاشة الرئيسية</div>
+  <button class="bn-inst" onclick="installApp()">تثبيت</button>
+  <button class="bn-ix" onclick="dismissInstall()">✕</button>
+</div>
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  DB
+// ══════════════════════════════════════════════
+let db;
+function initDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('GoldenLocationV4',1);
+    r.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('reps'))
+        d.createObjectStore('reps',{keyPath:'id',autoIncrement:true});
+    };
+    r.onsuccess=e=>{db=e.target.result;res()};
+    r.onerror=rej;
+  });
+}
+const dbGet=(s,k)=>new Promise((r,j)=>{const t=db.transaction(s,'readonly');const q=t.objectStore(s).get(k);q.onsuccess=()=>r(q.result);q.onerror=j});
+const dbAll=(s)=>new Promise((r,j)=>{const t=db.transaction(s,'readonly');const q=t.objectStore(s).getAll();q.onsuccess=()=>r(q.result);q.onerror=j});
+const dbPut=(s,o)=>new Promise((r,j)=>{const t=db.transaction(s,'readwrite');const q=t.objectStore(s).put(o);q.onsuccess=()=>r(q.result);q.onerror=j});
+const dbDel=(s,k)=>new Promise((r,j)=>{const t=db.transaction(s,'readwrite');const q=t.objectStore(s).delete(k);q.onsuccess=()=>r();q.onerror=j});
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let reps=[];
+let tempFile=null; // {customers:[]}
+let selRep=null;
+let results=null; // {days:[],excluded:[],repId}
+let mapInst=null;
+let curMapDay=0;
+const CREDS={u:'golden',p:'golden@2025'};
+const COLORS=['#C9A84C','#52C07A','#E05252','#5290E0','#C052E0','#E0A052','#52C0C0','#9052E0'];
+
+// ══════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════
+function doLogin(){
+  const u=document.getElementById('lgU').value.trim();
+  const p=document.getElementById('lgP').value;
+  const r=document.getElementById('lgR').checked;
+  if(u===CREDS.u&&p===CREDS.p){
+    if(r)localStorage.setItem('gl_auth','1');else sessionStorage.setItem('gl_auth','1');
+    showApp();
+  }else{document.getElementById('lgE').textContent='بيانات الدخول غير صحيحة'}
+}
+function doLogout(){localStorage.removeItem('gl_auth');sessionStorage.removeItem('gl_auth');location.reload()}
+function checkAuth(){if(localStorage.getItem('gl_auth')||sessionStorage.getItem('gl_auth'))showApp()}
+function showApp(){document.getElementById('lgS').style.display='none';document.getElementById('app').style.display='flex';loadReps()}
+document.getElementById('lgP').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+
+// ══════════════════════════════════════════════
+//  NAV
+// ══════════════════════════════════════════════
+function goPg(n){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.bn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg'+n).classList.add('active');
+  document.getElementById('bn'+n).classList.add('active');
+  if(n===2)refreshRepSel();
+  if(n===4)setTimeout(initMap,100);
+}
+
+// ══════════════════════════════════════════════
+//  ALGORITHMS
+// ══════════════════════════════════════════════
+function hav(a,b,c,d){
+  const R=6371000,r=x=>x*Math.PI/180,dL=r(c-a),dO=r(d-b);
+  const q=Math.sin(dL/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dO/2)**2;
+  return R*2*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));
+}
+function tdist(pts){
+  let d=0;
+  for(let i=0;i<pts.length-1;i++)if(pts[i].lat&&pts[i+1].lat)d+=hav(pts[i].lat,pts[i].lng,pts[i+1].lat,pts[i+1].lng);
+  return d;
+}
+function cl(s){return String(s||'').trim().replace(/[\u200B-\u200D\uFEFF]/g,'')}
+
+function detectCols(rows){
+  if(!rows.length)return null;
+  const keys=Object.keys(rows[0]);
+  const sample=rows.slice(0,Math.min(15,rows.length));
+  function sc(k,fn){const v=sample.map(r=>r[k]).filter(v=>v!==''&&v!=null);return v.length?v.filter(fn).length/v.length:0}
+  let latK='',latS=0;
+  keys.forEach(k=>{const s=sc(k,v=>{const n=parseFloat(v);return!isNaN(n)&&n>=29&&n<=34});if(s>latS){latS=s;latK=k}});
+  let lngK='',lngS=0;
+  keys.filter(k=>k!==latK).forEach(k=>{const s=sc(k,v=>{const n=parseFloat(v);return!isNaN(n)&&n>=34&&n<=40});if(s>lngS){lngS=s;lngK=k}});
+  const txt=keys.filter(k=>k!==latK&&k!==lngK);
+  let nameK='',nameS=-1;
+  txt.forEach(k=>{const v=sample.map(r=>cl(r[k])).filter(v=>v);if(!v.length)return;const s=new Set(v).size/v.length+(/اسم|عميل|name|customer/i.test(k)?0.4:0);if(s>nameS){nameS=s;nameK=k}});
+  const codeK=txt.find(k=>k!==nameK&&/رقم|code|id|كود/i.test(k))||txt.find(k=>k!==nameK)||keys[0];
+  const routeK=txt.find(k=>/مسار|route/i.test(k))||'';
+  return{nameK,codeK,routeK,latK,lngK};
+}
+
+function parseRows(rows){
+  const cols=detectCols(rows);
+  if(!cols)return[];
+  return rows.map((r,i)=>({
+    id:i,name:cl(r[cols.nameK]),code:cl(r[cols.codeK]),
+    route:cols.routeK?cl(r[cols.routeK]):'',
+    lat:parseFloat(r[cols.latK])||null,lng:parseFloat(r[cols.lngK])||null,
+  })).filter(c=>c.name).map(c=>{
+    if(c.lat&&c.lng&&c.lat>34&&c.lng>29&&c.lng<34)[c.lat,c.lng]=[c.lng,c.lat];
+    return c;
+  });
+}
+
+function detectAnomalies(custs){
+  const valid=custs.filter(c=>c.lat&&c.lng&&c.lat>=29&&c.lat<=34&&c.lng>=34&&c.lng<=40);
+  const noC=custs.filter(c=>!c.lat||!c.lng).map(c=>({...c,reason:'بدون إحداثيات'}));
+  const outB=custs.filter(c=>c.lat&&c.lng&&(c.lat<29||c.lat>34||c.lng<34||c.lng>40)).map(c=>({...c,reason:'إحداثيات خارج الأردن'}));
+  if(valid.length<5)return{valid,excluded:[...noC,...outB]};
+  const cLat=valid.reduce((s,c)=>s+c.lat,0)/valid.length;
+  const cLng=valid.reduce((s,c)=>s+c.lng,0)/valid.length;
+  const dists=valid.map(c=>hav(c.lat,c.lng,cLat,cLng));
+  const avg=dists.reduce((a,b)=>a+b,0)/dists.length;
+  const std=Math.sqrt(dists.map(d=>(d-avg)**2).reduce((a,b)=>a+b,0)/dists.length);
+  const thresh=Math.max(avg+2.5*std,avg*2.5,8000);
+  const clean=[],anom=[];
+  valid.forEach((c,i)=>dists[i]>thresh?anom.push({...c,reason:`شاذ — بعيد ${Math.round(dists[i]/1000)} كم عن المجموعة`}):clean.push(c));
+  return{valid:clean,excluded:[...noC,...outB,...anom]};
+}
+
+function mortonCode(x,y,bits=16){
+  const xi=Math.floor(x*(2**bits-1)),yi=Math.floor(y*(2**bits-1));
+  let code=0;
+  for(let i=0;i<bits;i++){code|=((xi>>i)&1)<<(2*i);code|=((yi>>i)&1)<<(2*i+1)}
+  return code;
+}
+
+function mortonSort(custs){
+  const lats=custs.map(c=>c.lat),lngs=custs.map(c=>c.lng);
+  const la0=Math.min(...lats),la1=Math.max(...lats),lo0=Math.min(...lngs),lo1=Math.max(...lngs);
+  return [...custs].sort((a,b)=>{
+    const ax=(a.lng-lo0)/(lo1-lo0+1e-10),ay=(a.lat-la0)/(la1-la0+1e-10);
+    const bx=(b.lng-lo0)/(lo1-lo0+1e-10),by=(b.lat-la0)/(la1-la0+1e-10);
+    return mortonCode(ax,ay)-mortonCode(bx,by);
+  });
+}
+
+function balancedSplit(sorted,n){
+  const N=sorted.length,base=Math.floor(N/n),extra=N%n;
+  const groups=[];let start=0;
+  for(let i=0;i<n;i++){const sz=base+(i<extra?1:0);groups.push(sorted.slice(start,start+sz));start+=sz}
+  return groups;
+}
+
+function smartSwap(groups,passes=8){
+  for(let p=0;p<passes;p++){
+    let imp=false;
+    for(let i=0;i<groups.length&&!imp;i++){
+      const ci=groups[i].reduce((s,c)=>[s[0]+c.lat,s[1]+c.lng],[0,0]).map(v=>v/groups[i].length);
+      for(let k=0;k<groups[i].length&&!imp;k++){
+        const c=groups[i][k];
+        const dI=hav(c.lat,c.lng,ci[0],ci[1]);
+        for(let j=0;j<groups.length&&!imp;j++){
+          if(j===i)continue;
+          const cj=groups[j].reduce((s,c)=>[s[0]+c.lat,s[1]+c.lng],[0,0]).map(v=>v/groups[j].length);
+          const dJ=hav(c.lat,c.lng,cj[0],cj[1]);
+          if(dJ<dI*0.5){
+            const jd=groups[j].map((c2,m)=>({m,d:hav(c2.lat,c2.lng,cj[0],cj[1])})).sort((a,b)=>b.d-a.d);
+            for(const{m,d} of jd.slice(0,3)){
+              const c2=groups[j][m];
+              if(hav(c2.lat,c2.lng,ci[0],ci[1])<dI*1.4){
+                groups[i][k]=c2;groups[j][m]=c;imp=true;break;
+              }
+            }
+          }
+        }
+      }
+    }
+    if(!imp)break;
+  }
+  return groups;
+}
+
+function nnTour(pts,si){
+  const n=pts.length,vis=new Array(n).fill(false);
+  const tour=[si];vis[si]=true;
+  for(let i=1;i<n;i++){
+    const last=tour[tour.length-1];let best=-1,bd=Infinity;
+    for(let j=0;j<n;j++){if(vis[j]||!pts[j].lat)continue;const d=hav(pts[last].lat,pts[last].lng,pts[j].lat,pts[j].lng);if(d<bd){bd=d;best=j}}
+    if(best===-1)for(let j=0;j<n;j++)if(!vis[j]){best=j;break}
+    if(best===-1)break;
+    tour.push(best);vis[best]=true;
+  }
+  for(let j=0;j<n;j++)if(!vis[j])tour.push(j);
+  return tour.map(i=>pts[i]);
+}
+
+function twoOpt(pts){
+  const r=[...pts],n=r.length;let imp=true,itr=0;
+  while(imp&&itr<300){imp=false;itr++;
+    for(let i=0;i<n-1;i++)for(let j=i+2;j<n;j++){
+      if(j===n-1&&i===0)continue;
+      const[a,b,c,d]=[r[i],r[i+1],r[j],r[(j+1)%n]];
+      if(!a?.lat||!b?.lat||!c?.lat||!d?.lat)continue;
+      const d1=hav(a.lat,a.lng,b.lat,b.lng)+hav(c.lat,c.lng,d.lat,d.lng);
+      const d2=hav(a.lat,a.lng,c.lat,c.lng)+hav(b.lat,b.lng,d.lat,d.lng);
+      if(d2<d1-0.1){r.splice(i+1,j-i,...r.slice(i+1,j+1).reverse());imp=true}
+    }
+  }
+  return r;
+}
+
+function orOpt(pts){
+  let r=[...pts],n=r.length,imp=true,itr=0;
+  while(imp&&itr<40){imp=false;itr++;
+    for(let i=0;i<n;i++){
+      const c=r[i];if(!c?.lat)continue;
+      const pv=r[(i-1+n)%n],nx=r[(i+1)%n];
+      if(!pv?.lat||!nx?.lat)continue;
+      const oc=hav(pv.lat,pv.lng,c.lat,c.lng)+hav(c.lat,c.lng,nx.lat,nx.lng)-hav(pv.lat,pv.lng,nx.lat,nx.lng);
+      let bg=0.1,bj=-1;
+      for(let j=0;j<n;j++){
+        if(Math.abs(j-i)<=1||j===(i-1+n)%n)continue;
+        const ins=r[j%n],inn=r[(j+1)%n];
+        if(!ins?.lat||!inn?.lat)continue;
+        const nc=hav(ins.lat,ins.lng,c.lat,c.lng)+hav(c.lat,c.lng,inn.lat,inn.lng)-hav(ins.lat,ins.lng,inn.lat,inn.lng);
+        if(oc-nc>bg){bg=oc-nc;bj=j}
+      }
+      if(bj>=0){const cn=r.splice(i,1)[0];r.splice(bj>i?bj-1:bj+1,0,cn);imp=true;break}
+    }
+  }
+  return r;
+}
+
+function optimizeDay(custs){
+  const valid=custs.filter(c=>c.lat&&c.lng),fixed=custs.filter(c=>!c.lat||!c.lng);
+  if(valid.length<3)return custs;
+  let best=null,bd=Infinity;
+  const starts=Math.min(valid.length,15);
+  for(let s=0;s<starts;s++){
+    const si=Math.floor(s*(valid.length/starts));
+    let t=nnTour(valid,si);t=twoOpt(t);t=orOpt(t);t=twoOpt(t);
+    const d=tdist(t);if(d<bd){bd=d;best=t}
+  }
+  return[...(best||valid),...fixed];
+}
+
+// ══════════════════════════════════════════════
+//  REPS CRUD
+// ══════════════════════════════════════════════
+async function loadReps(){reps=await dbAll('reps');renderReps()}
+
+function renderReps(){
+  const el=document.getElementById('repsList');
+  if(!reps.length){
+    el.innerHTML=`<div class="empty"><div class="empty-i">👥</div><div class="empty-t">لا يوجد مناديب بعد</div><div>اضغط "+ إضافة مندوب" للبدء</div></div>`;
+    return;
+  }
+  el.innerHTML=reps.map(r=>{
+    const cnt=r.customers?.length||0;
+    const init=r.name.split(' ').map(w=>w[0]).join('').substring(0,2);
+    return `<div class="rc" onclick="selectRepAndProcess(${r.id})">
+      <div class="rc-top">
+        <div class="rc-av">${init}</div>
+        <div class="rc-info">
+          <div class="rc-nm">${r.name}</div>
+          <div class="rc-meta">${cnt} عميل محمّل</div>
+        </div>
+        <div class="ib" onclick="event.stopPropagation();deleteRep(${r.id})" title="حذف">🗑️</div>
+      </div>
+      <div class="rc-stats">
+        <div class="rc-stat"><div class="rc-sn">${cnt}</div><div class="rc-sl">عميل</div></div>
+        <div class="rc-stat"><div class="rc-sn" style="color:var(--grn)">${r.customers?.filter(c=>c.lat).length||0}</div><div class="rc-sl">بإحداثيات</div></div>
+        <div class="rc-stat"><div class="rc-sn" style="color:var(--org)">${cnt-(r.customers?.filter(c=>c.lat).length||0)}</div><div class="rc-sl">بدون إحداثيات</div></div>
+      </div>
+      <div class="rc-ftr">
+        <span class="rc-badge ${cnt>0?'rb-ok':'rb-no'}">${cnt>0?'✓':'✗'} ملف العملاء</span>
+        ${r.lastRun?`<span class="rc-badge rb-ok">✓ آخر تشغيل: ${r.lastRun}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddRep(){
+  tempFile=null;
+  document.getElementById('repNm').value='';
+  document.getElementById('mu1R').style.display='none';
+  document.getElementById('mu1').classList.remove('done');
+  document.getElementById('mf1').value='';
+  document.getElementById('addRepMod').classList.add('open');
+}
+
+function handleRepFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      const custs=parseRows(rows);
+      tempFile={customers:custs};
+      const r=document.getElementById('mu1R');
+      r.style.display='block';
+      r.textContent=`✅ ${custs.length} عميل — ${custs.filter(c=>c.lat).length} بإحداثيات`;
+      document.getElementById('mu1').classList.add('done');
+    }catch(err){toast('❌ خطأ في قراءة الملف')}
+  };
+  reader.readAsBinaryString(file);
+}
+
+async function saveRep(){
+  const name=document.getElementById('repNm').value.trim();
+  if(!name){toast('❌ أدخل اسم المندوب');return}
+  if(!tempFile){toast('❌ ارفع ملف العملاء');return}
+  await dbPut('reps',{name,customers:tempFile.customers,createdAt:Date.now()});
+  await loadReps();
+  closeModal('addRepMod');
+  toast(`✅ تم حفظ "${name}"`);
+  refreshRepSel();
+}
+
+async function deleteRep(id){
+  if(!confirm('هل تريد حذف هذا المندوب؟'))return;
+  await dbDel('reps',id);
+  await loadReps();
+  toast('تم الحذف');
+  refreshRepSel();
+}
+
+// ══════════════════════════════════════════════
+//  PROCESS
+// ══════════════════════════════════════════════
+function refreshRepSel(){
+  const el=document.getElementById('repSel');
+  el.innerHTML=reps.map(r=>`<div class="rc-chip ${selRep?.id===r.id?'active':''}" onclick="selectRep(${r.id})">${r.name}</div>`).join('');
+}
+
+function selectRep(id){
+  selRep=reps.find(r=>r.id===id);
+  refreshRepSel();
+  if(selRep) buildProcPanel();
+}
+
+function selectRepAndProcess(id){
+  selectRep(id);
+  goPg(2);
+}
+
+function buildProcPanel(){
+  const r=selRep;
+  const{valid,excluded}=detectAnomalies(r.customers||[]);
+  const noC=excluded.filter(e=>e.reason.includes('بدون')).length;
+  const anom=excluded.filter(e=>e.reason.includes('شاذ')).length;
+  const outB=excluded.filter(e=>e.reason.includes('خارج')).length;
+
+  let html=`<div class="card">
+    <div class="card-hd">📊 تحليل بيانات ${r.name}</div>
+    <div class="sum-g">
+      <div class="sum-b"><div class="sum-n">${r.customers?.length||0}</div><div class="sum-l">إجمالي العملاء</div></div>
+      <div class="sum-b"><div class="sum-n" style="color:var(--grn)">${valid.length}</div><div class="sum-l">جاهزون للتوزيع</div></div>
+      <div class="sum-b"><div class="sum-n" style="color:var(--org)">${excluded.length}</div><div class="sum-l">مستثنون تلقائياً</div></div>
+    </div>`;
+
+  if(noC) html+=`<div class="alert a-wn">📍 ${noC} عميل بدون إحداثيات — سيُحفظون في شيت منفصل</div>`;
+  if(anom) html+=`<div class="alert a-wn">🔍 ${anom} عميل شاذ جغرافياً — بعيدون عن المجموعة</div>`;
+  if(outB) html+=`<div class="alert a-er">🚨 ${outB} عميل بإحداثيات خارج الأردن</div>`;
+  if(!excluded.length) html+=`<div class="alert a-ok">✅ جميع البيانات سليمة</div>`;
+  html+=`</div>`;
+
+  html+=`<div class="card">
+    <div class="card-hd">📅 عدد أيام العمل</div>
+    <div class="days-ctrl">
+      <label>سيوزَّع ${valid.length} عميل على هذا العدد من الأيام</label>
+      <input type="number" class="days-in" id="daysIn" value="12" min="2" max="30">
+    </div>
+    <div style="font-size:11px;color:var(--t3)">التوزيع بناءً على التقارب الجغرافي — ~${Math.ceil(valid.length/12)} عميل/يوم</div>
+  </div>`;
+
+  html+=`<button class="btn-p bfw" onclick="runProcess()">⚡ بدء التوزيع الجغرافي</button>`;
+
+  document.getElementById('procPanel').innerHTML=html;
+}
+
+async function runProcess(){
+  if(!selRep){toast('اختر مندوباً');return}
+  const numDays=parseInt(document.getElementById('daysIn').value)||12;
+  if(numDays<2||numDays>30){toast('عدد الأيام بين 2 و 30');return}
+
+  const{valid,excluded}=detectAnomalies(selRep.customers||[]);
+  if(valid.length<numDays){toast('❌ عدد العملاء أقل من عدد الأيام');return}
+
+  // show progress
+  const panel=document.getElementById('procPanel');
+  panel.innerHTML=`<div class="prog on" id="progW">
+    <div class="prog-m" id="progM">جاري المعالجة...</div>
+    <div class="prog-t"><div class="prog-b" id="progB"></div></div>
+  </div>`;
+
+  const setP=(m,p)=>{document.getElementById('progM').textContent=m;document.getElementById('progB').style.width=p+'%'};
+
+  await sleep(50);
+  setP(`🔢 فرز ${valid.length} عميل جغرافياً...`,15);await sleep(80);
+  const sorted=mortonSort(valid);
+
+  setP(`📐 تقسيم متوازن على ${numDays} أيام...`,30);await sleep(80);
+  let groups=balancedSplit(sorted,numDays);
+
+  setP('🔄 تحسين التوزيع الجغرافي...',45);await sleep(80);
+  groups=smartSwap(groups);
+
+  const days=[];
+  for(let i=0;i<groups.length;i++){
+    const pct=45+Math.floor((i/groups.length)*50);
+    setP(`⚙️ تحسين ترتيب يوم ${i+1}/${groups.length}...`,pct);
+    await sleep(5);
+    const opt=optimizeDay(groups[i]);
+    const d=tdist(opt)/1000;
+    const jumps=[];
+    for(let j=0;j<opt.length-1;j++)if(opt[j].lat&&opt[j+1].lat)jumps.push(hav(opt[j].lat,opt[j].lng,opt[j+1].lat,opt[j+1].lng));
+    days.push({
+      customers:opt,dist:d,
+      avg:d*1000/Math.max(opt.length-1,1),
+      maxJump:jumps.length?Math.max(...jumps)/1000:0,
+      over2:jumps.filter(j=>j>2000).length,
+    });
+  }
+
+  setP('✅ اكتمل!',100);await sleep(300);
+
+  results={days,excluded,repId:selRep.id,repName:selRep.name,numDays};
+
+  // save lastRun
+  selRep.lastRun=new Date().toLocaleDateString('ar-JO');
+  await dbPut('reps',selRep);
+  await loadReps();
+
+  buildResultsPage();
+  buildMapUI();
+  buildExportUI();
+  goPg(3);
+  toast(`✅ تم توزيع ${valid.length} عميل على ${numDays} يوم`);
+}
+
+// ══════════════════════════════════════════════
+//  RESULTS PAGE
+// ══════════════════════════════════════════════
+function buildResultsPage(){
+  if(!results)return;
+  const total=results.days.reduce((s,d)=>s+d.dist,0);
+  const totalC=results.days.reduce((s,d)=>s+d.customers.length,0);
+
+  let html=`<div class="card-hd" style="margin-bottom:10px">📋 نتائج توزيع ${results.repName}</div>
+  <div class="sum-g">
+    <div class="sum-b"><div class="sum-n">${totalC}</div><div class="sum-l">عميل موزَّع</div></div>
+    <div class="sum-b"><div class="sum-n" style="color:var(--grn)">${total.toFixed(1)}</div><div class="sum-l">إجمالي كم</div></div>
+    <div class="sum-b"><div class="sum-n" style="color:var(--gold)">${(total/results.numDays).toFixed(1)}</div><div class="sum-l">متوسط يومي</div></div>
+  </div>`;
+
+  results.days.forEach((day,i)=>{
+    const st=day.avg<500&&day.maxJump<5?'✅':day.avg<900&&day.maxJump<10?'⚠️':'🔴';
+    html+=`<div class="day-c" id="dc${i}">
+      <div class="day-h" onclick="toggleDay(${i})">
+        <div class="day-bdg">${i+1}</div>
+        <div class="day-inf">
+          <div class="day-nm">يوم ${i+1}</div>
+          <div class="day-mt">${day.customers.length} عميل · ${day.dist.toFixed(2)} كم · متوسط ${Math.round(day.avg)} م</div>
+        </div>
+        <div class="day-st">${st}</div>
+        <div class="chv">▼</div>
+      </div>
+      <div class="day-bd">
+        ${day.customers.map((c,j)=>{
+          const nx=day.customers[j+1];
+          let ds='',dc='d-ok';
+          if(nx&&c.lat&&nx.lat){
+            const dm=Math.round(hav(c.lat,c.lng,nx.lat,nx.lng));
+            ds=dm+'م';
+            dc=dm>2000?'d-er':dm>500?'d-wn':'d-ok';
+          }
+          return `<div class="ri"><div class="ri-n">${j+1}</div><div class="ri-nm">${c.name}</div>${ds?`<div class="ri-d ${dc}">${ds}</div>`:''}</div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  if(results.excluded.length){
+    html+=`<div class="card" style="margin-top:4px">
+      <div class="card-hd">⛔ مستثنون تلقائياً (${results.excluded.length})</div>
+      ${results.excluded.map(e=>`<div class="excl-i"><div style="font-size:16px">${e.reason.includes('بدون')?'📍':e.reason.includes('خارج')?'🚨':'⚠️'}</div><div class="excl-nm">${e.name}</div><div class="excl-r">${e.reason}</div></div>`).join('')}
+    </div>`;
+  }
+
+  document.getElementById('resultsPanel').innerHTML=html;
+}
+
+function toggleDay(i){document.getElementById('dc'+i)?.classList.toggle('open')}
+
+// ══════════════════════════════════════════════
+//  MAP
+// ══════════════════════════════════════════════
+function buildMapUI(){
+  if(!results)return;
+  const tabs=results.days.map((_,i)=>`<div class="mt ${i===0?'active':''}" id="mt${i}" onclick="switchDay(${i})">يوم ${i+1}</div>`).join('');
+  document.getElementById('mapPanel').innerHTML=`
+    <div class="map-tabs">${tabs}</div>
+    <div class="map-wrap"><div id="mapEl"></div></div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-hd" id="mapInfo">يوم 1</div>
+      <div id="mapStats"></div>
+    </div>`;
+}
+
+function initMap(){
+  if(!results)return;
+  curMapDay=0;drawMap(0);
+}
+
+function drawMap(i){
+  if(mapInst){mapInst.remove();mapInst=null}
+  const el=document.getElementById('mapEl');if(!el)return;
+  const day=results?.days[i];if(!day)return;
+  const pts=day.customers.filter(c=>c.lat&&c.lng);if(!pts.length)return;
+  const color=COLORS[i%COLORS.length];
+  const map=L.map('mapEl',{zoomControl:true,attributionControl:false});
+  mapInst=map;
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  L.polyline(pts.map(p=>[p.lat,p.lng]),{color,weight:2.5,opacity:.85}).addTo(map);
+  pts.forEach((p,j)=>{
+    const ico=L.divIcon({html:`<div style="background:${color};color:white;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4)">${j+1}</div>`,iconSize:[20,20],iconAnchor:[10,10],className:''});
+    L.marker([p.lat,p.lng],{icon:ico}).bindPopup(`<b>${p.name}</b>${p.code?'<br>'+p.code:''}`).addTo(map);
+  });
+  map.fitBounds(pts.map(p=>[p.lat,p.lng]),{padding:[16,16]});
+  const st=day.avg<500&&day.maxJump<5?'✅':day.avg<900&&day.maxJump<10?'⚠️':'🔴';
+  document.getElementById('mapInfo').textContent=`يوم ${i+1} ${st} — ${results.repName}`;
+  document.getElementById('mapStats').innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap">
+    <span class="bdg bg">${day.customers.length} عميل</span>
+    <span class="bdg bg-g">${day.dist.toFixed(2)} كم</span>
+    <span class="bdg ${day.avg<500?'bg-g':day.avg<900?'bg-o':'bg-r'}">${Math.round(day.avg)} م متوسط</span>
+    <span class="bdg ${day.maxJump<5?'bg-g':day.maxJump<10?'bg-o':'bg-r'}">${day.maxJump.toFixed(2)} كم أكبر قفزة</span>
+  </div>`;
+}
+
+function switchDay(i){
+  document.querySelectorAll('.mt').forEach(t=>t.classList.remove('active'));
+  document.getElementById('mt'+i)?.classList.add('active');
+  curMapDay=i;drawMap(i);
+}
+
+// ══════════════════════════════════════════════
+//  EXPORT
+// ══════════════════════════════════════════════
+function buildExportUI(){
+  if(!results)return;
+  const total=results.days.reduce((s,d)=>s+d.dist,0);
+  const totalC=results.days.reduce((s,d)=>s+d.customers.length,0);
+  document.getElementById('exportPanel').innerHTML=`
+  <div class="card-hd" style="margin-bottom:10px">📤 تصدير — ${results.repName}</div>
+  <div class="exp-row" onclick="exportAll()">
+    <div class="exp-ico">📊</div>
+    <div class="exp-txt"><h4>تصدير الكل</h4><p>${results.numDays} شيت · ${totalC} عميل · ${total.toFixed(1)} كم + شيت المستثنين</p></div>
+  </div>
+  <div class="exp-row" onclick="exportDay(curMapDay)">
+    <div class="exp-ico">📅</div>
+    <div class="exp-txt"><h4>تصدير اليوم المحدد في الخريطة</h4><p>اختر اليوم من الخريطة ثم اضغط هنا</p></div>
+  </div>
+  <div class="card">
+    <div class="card-hd">📈 ملخص التوزيع</div>
+    <div style="overflow-x:auto"><table class="tbl">
+      <tr><th>اليوم</th><th>عملاء</th><th>المسافة</th><th>متوسط</th><th>أكبر قفزة</th><th>الحالة</th></tr>
+      ${results.days.map((d,i)=>{
+        const st=d.avg<500&&d.maxJump<5?'✅':d.avg<900&&d.maxJump<10?'⚠️':'🔴';
+        const bc=d.avg<500?'bg-g':d.avg<900?'bg-o':'bg-r';
+        return `<tr><td>يوم ${i+1}</td><td>${d.customers.length}</td><td>${d.dist.toFixed(2)} كم</td>
+          <td><span class="bdg ${bc}">${Math.round(d.avg)} م</span></td>
+          <td>${d.maxJump.toFixed(2)} كم</td><td>${st}</td></tr>`;
+      }).join('')}
+      <tr style="font-weight:700"><td>الإجمالي</td><td>${totalC}</td><td>${total.toFixed(2)} كم</td>
+        <td>${Math.round(total*1000/Math.max(totalC-results.numDays,1))} م</td><td>—</td><td>—</td></tr>
+    </table></div>
+  </div>`;
+}
+
+function exportAll(){
+  if(!results)return;
+  const wb=XLSX.utils.book_new();
+  results.days.forEach((day,i)=>{
+    const data=day.customers.map((c,j)=>{
+      const nx=day.customers[j+1];
+      let dm='';if(nx&&c.lat&&nx.lat)dm=Math.round(hav(c.lat,c.lng,nx.lat,nx.lng));
+      return{'#':j+1,'اسم العميل':c.name,'رقم النظام':c.code,'المسار الأصلي':c.route||'',
+             'Latitude':c.lat||'','Longitude':c.lng||'','المسافة للتالي (م)':dm,
+             'ملاحظة':!c.lat?'⚠️ بدون إحداثيات':''};
+    });
+    const ws=XLSX.utils.json_to_sheet(data);
+    ws['!cols']=[{wch:5},{wch:42},{wch:14},{wch:22},{wch:14},{wch:14},{wch:18},{wch:18}];
+    XLSX.utils.book_append_sheet(wb,ws,`يوم ${i+1}`);
+  });
+  // ملخص
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(results.days.map((d,i)=>({
+    'اليوم':`يوم ${i+1}`,'عدد العملاء':d.customers.length,
+    'إجمالي المسافة (كم)':d.dist.toFixed(2),'متوسط بين عميلين (م)':Math.round(d.avg),
+    'أكبر قفزة (كم)':d.maxJump.toFixed(2),'قفزات > 2كم':d.over2,
+    'الحالة':d.avg<500&&d.maxJump<5?'ممتاز':d.avg<900&&d.maxJump<10?'جيد':'يحتاج مراجعة',
+  }))),'الملخص');
+  // مستثنون
+  if(results.excluded.length){
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(results.excluded.map(e=>({
+      'اسم العميل':e.name,'رقم النظام':e.code||'','المسار':e.route||'',
+      'السبب':e.reason,'Latitude':e.lat||'','Longitude':e.lng||'',
+    }))),'مستثنون — تحتاج مراجعة');
+  }
+  XLSX.writeFile(wb,`Golden-Location-${results.repName}.xlsx`);
+  toast(`✅ تم تصدير ${results.numDays} يوم`);
+}
+
+function exportDay(idx){
+  if(!results)return;
+  const wb=XLSX.utils.book_new();
+  const day=results.days[idx];
+  const data=day.customers.map((c,j)=>{
+    const nx=day.customers[j+1];
+    let dm='';if(nx&&c.lat&&nx.lat)dm=Math.round(hav(c.lat,c.lng,nx.lat,nx.lng));
+    return{'#':j+1,'اسم العميل':c.name,'رقم النظام':c.code,'المسار الأصلي':c.route||'',
+           'Latitude':c.lat||'','Longitude':c.lng||'','المسافة للتالي (م)':dm};
+  });
+  const ws=XLSX.utils.json_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb,ws,`يوم ${idx+1}`);
+  XLSX.writeFile(wb,`Golden-Location-${results.repName}-يوم${idx+1}.xlsx`);
+  toast(`✅ تم تصدير يوم ${idx+1}`);
+}
+
+// ══════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+
+// PWA
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('instBnr').classList.add('show')});
+function installApp(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;dismissInstall()})}
+function dismissInstall(){document.getElementById('instBnr').classList.remove('show')}
+window.addEventListener('appinstalled',()=>{dismissInstall();toast('✅ تم التثبيت')});
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+
+initDB().then(checkAuth);
+</script>
+</body>
+</html>
